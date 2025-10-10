@@ -9,7 +9,7 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(SOURCES
     ${SRC_DIR}/logger.cpp
-    ${SRC_DIR}/assert.cpp
+    ${SRC_DIR}/l_assert.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC

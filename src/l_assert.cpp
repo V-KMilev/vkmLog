@@ -1,4 +1,4 @@
-#include "assert.h"
+#include "l_assert.h"
 
 #include <stdio.h>
 // Linux g++ specific for abort()
