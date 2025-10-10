@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <mutex>
+#include <memory>
 
 /**
  * @brief Log levels for the Logger.
@@ -19,7 +20,7 @@ enum class LogLevel {
  * @brief Thread-safe singleton logger class for logging messages to file and console.
  *
  * Usage:
- *   - Initialize once with Logger::init(filename, level)
+ *   - Initialize once with Logger::init(filename, suffix,level)
  *   - Use LOG_* macros for logging
  */
 class Logger {
@@ -88,8 +89,8 @@ class Logger {
         std::string getTimestamp();
 
     private:
-        std::string m_suffix;
         std::string m_filename;
+        std::string m_suffix;
         LogLevel m_level;
 
         std::ofstream m_file;
