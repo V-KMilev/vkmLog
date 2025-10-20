@@ -54,12 +54,12 @@ Logger& Logger::getInstance() {
 }
 
 void Logger::log(LogLevel level, const char* format, ...) {
-    if (!m_file.is_open()) {
-        printf("WARNING: Failed to open log file: %s\n", m_filename.c_str());
+    if (level < m_level) {
         return;
     }
 
-    if (level < m_level) {
+    if (!m_file.is_open()) {
+        printf("WARNING: Failed to open log file: %s\n", m_filename.c_str());
         return;
     }
 
@@ -119,6 +119,14 @@ std::string Logger::getTimestamp() {
     localtime_r(&nowTime, &timeInfo);
 #endif
     std::ostringstream timestampStream;
+    // Get milliseconds
+    auto now_ms = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now_ms.time_since_epoch()
+    ) % 1000;
+
     timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+    timestampStream << '.' << std::setfill('0') << std::setw(3) << ms.count();
+
     return timestampStream.str();
 }
