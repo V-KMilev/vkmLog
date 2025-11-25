@@ -9,6 +9,8 @@
  * @brief Log levels for the Logger.
  */
 enum class LogLevel {
+    TRACE,
+    VERBOSE,
     DEBUG,
     INFO,
     WARNING,
@@ -102,8 +104,10 @@ class Logger {
 
 // Macros for easy logging
 #define LOG(level, format, ...)  Logger::getInstance().log(level, format, ##__VA_ARGS__)
-#define LOG_INFO(format, ...)    LOG(LogLevel::INFO, format, ##__VA_ARGS__)
+#define LOG_TRACE(format, ...)   LOG(LogLevel::TRACE, format, ##__VA_ARGS__)
+#define LOG_VERBOSE(format, ...) LOG(LogLevel::VERBOSE, format, ##__VA_ARGS__)
 #define LOG_DEBUG(format, ...)   LOG(LogLevel::DEBUG, format, ##__VA_ARGS__)
+#define LOG_INFO(format, ...)    LOG(LogLevel::INFO, format, ##__VA_ARGS__)
 #define LOG_WARNING(format, ...) LOG(LogLevel::WARNING, format, ##__VA_ARGS__)
 #define LOG_ERROR(format, ...)   LOG(LogLevel::ERROR, format, ##__VA_ARGS__)
 #define LOG_FATAL(format, ...)   LOG(LogLevel::FATAL, format, ##__VA_ARGS__)
