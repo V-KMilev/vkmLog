@@ -49,6 +49,7 @@ bool Logger::init(const std::string& filename, const std::string& suffix, LogLev
 Logger& Logger::getInstance() {
     if (!s_instance || !s_isInitialized) {
         printf("ERROR: Logger not initialized! Call Logger::init() before using.\n");
+        throw std::runtime_error("Logger not initialized! Call Logger::init() before using.");
     }
     return *s_instance;
 }
@@ -100,6 +101,8 @@ void Logger::log(LogLevel level, const char* format, ...) {
 
 std::string Logger::levelToString(LogLevel level) {
     switch (level) {
+        case LogLevel::TRACE:   return "TRACE";
+        case LogLevel::VERBOSE: return "VERBOSE";
         case LogLevel::DEBUG:   return "DEBUG";
         case LogLevel::INFO:    return "INFO";
         case LogLevel::WARNING: return "WARNING";
