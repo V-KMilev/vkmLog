@@ -33,5 +33,11 @@ void __assert(
  * @param Expected Expression to check.
  * @param ... Optional message or argument.
  */
+#ifdef NDEBUG
+// Release build: disable assertion checking for performance
+ #define VKM_ASSERT(Expected, ...) true
+#else
+// Debug build: enable assertion checking
 #define VKM_ASSERT(Expected, ...)                                   \
     __assert(Expected, #Expected, __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
