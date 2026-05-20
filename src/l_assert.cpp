@@ -1,27 +1,34 @@
 #include "l_assert.h"
 
-#include <stdio.h>
-// Linux g++ specific for abort()
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 
 #include "logger.h"
 
-void __assert(
-    bool expected,
+void __assert_fail(
     const char* expected_str,
     const char* file,
     int line,
-    const char* message
+    const char* fmt,
+    ...
 ) {
-    if (expected) {
-        return;
+    if (fmt == nullptr) {
+        LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s'",
+            file, line, expected_str);
+    } else {
+        char buf[512];
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+        LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s', Info: %s",
+            file, line, expected_str, buf);
     }
 
-    LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s', Info: %s", file, line, expected_str, message);
-
 #ifdef _WIN32
-        __debugbreak();
+    __debugbreak();
 #else
-        abort();
+    abort();
 #endif
 }
