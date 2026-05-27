@@ -59,10 +59,13 @@ class Logger {
         /**
          * @brief Logs a formatted message with the given log level.
          * @param level Log level for the message.
+         * @param category Optional subsystem tag printed between the suffix
+         *                 and the level (e.g. "CORE", "RENDER", "BACKEND::GL").
+         *                 Pass nullptr or "" to omit the tag entirely.
          * @param format printf-style format string.
          * @param ... Arguments for the format string.
          */
-        void log(LogLevel level, const char* format, ...);
+        void log(LogLevel level, const char* category, const char* format, ...);
 
     private:
         /**
@@ -102,8 +105,19 @@ class Logger {
         static std::unique_ptr<Logger> s_instance;
 };
 
-// Macros for easy logging
-#define LOG(level, format, ...)  Logger::getInstance().log(level, format, ##__VA_ARGS__)
+// Per-file category tag. Define before #include "logger.h" to label every
+// LOG_* call in that translation unit:
+//   #define VKM_LOG_CATEGORY "RENDER"
+//   #include "logger.h"
+// Files that don't define it get no category bracket (back-compat with
+// pre-category logs).
+#ifndef VKM_LOG_CATEGORY
+    #define VKM_LOG_CATEGORY nullptr
+#endif
+
+// Macros for easy logging. Category comes from VKM_LOG_CATEGORY at the call
+// site; use LOG_*_C(category, ...) variants to override for a single call.
+#define LOG(level, format, ...)  Logger::getInstance().log(level, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
 #define LOG_TRACE(format, ...)   LOG(LogLevel::TRACE, format, ##__VA_ARGS__)
 #define LOG_VERBOSE(format, ...) LOG(LogLevel::VERBOSE, format, ##__VA_ARGS__)
 #define LOG_DEBUG(format, ...)   LOG(LogLevel::DEBUG, format, ##__VA_ARGS__)
@@ -111,3 +125,14 @@ class Logger {
 #define LOG_WARNING(format, ...) LOG(LogLevel::WARNING, format, ##__VA_ARGS__)
 #define LOG_ERROR(format, ...)   LOG(LogLevel::ERROR, format, ##__VA_ARGS__)
 #define LOG_FATAL(format, ...)   LOG(LogLevel::FATAL, format, ##__VA_ARGS__)
+
+// Explicit-category variants. Use for inline log calls in headers, or when a
+// single line needs to override the file's default category.
+#define LOG_C(level, category, format, ...)  Logger::getInstance().log(level, category, format, ##__VA_ARGS__)
+#define LOG_TRACE_C(category, format, ...)   LOG_C(LogLevel::TRACE, category, format, ##__VA_ARGS__)
+#define LOG_VERBOSE_C(category, format, ...) LOG_C(LogLevel::VERBOSE, category, format, ##__VA_ARGS__)
+#define LOG_DEBUG_C(category, format, ...)   LOG_C(LogLevel::DEBUG, category, format, ##__VA_ARGS__)
+#define LOG_INFO_C(category, format, ...)    LOG_C(LogLevel::INFO, category, format, ##__VA_ARGS__)
+#define LOG_WARNING_C(category, format, ...) LOG_C(LogLevel::WARNING, category, format, ##__VA_ARGS__)
+#define LOG_ERROR_C(category, format, ...)   LOG_C(LogLevel::ERROR, category, format, ##__VA_ARGS__)
+#define LOG_FATAL_C(category, format, ...)   LOG_C(LogLevel::FATAL, category, format, ##__VA_ARGS__)

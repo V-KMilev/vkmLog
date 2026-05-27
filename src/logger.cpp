@@ -54,7 +54,7 @@ Logger& Logger::getInstance() {
     return *s_instance;
 }
 
-void Logger::log(LogLevel level, const char* format, ...) {
+void Logger::log(LogLevel level, const char* category, const char* format, ...) {
     if (level < m_level) {
         return;
     }
@@ -88,7 +88,11 @@ void Logger::log(LogLevel level, const char* format, ...) {
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         std::ostringstream logStream;
-        logStream << "[" << getTimestamp() << "] [" << m_suffix << "] [" << levelToString(level) << "] " << formattedMsg << "\n";
+        logStream << "[" << getTimestamp() << "] [" << m_suffix << "]";
+        if (category && *category) {
+            logStream << " [" << category << "]";
+        }
+        logStream << " [" << levelToString(level) << "] " << formattedMsg << "\n";
 
         // Output to console
         printf("%s", logStream.str().c_str());
