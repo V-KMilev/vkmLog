@@ -54,7 +54,7 @@ Logger& Logger::getInstance() {
     return *s_instance;
 }
 
-void Logger::log(LogLevel level, const char* category, const char* format, ...) {
+void Logger::log(LogLevel level, const char* suffix, const char* category, const char* format, ...) {
     if (level < m_level) {
         return;
     }
@@ -88,7 +88,11 @@ void Logger::log(LogLevel level, const char* category, const char* format, ...) 
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         std::ostringstream logStream;
-        logStream << "[" << getTimestamp() << "] [" << m_suffix << "]";
+        // Suffix is per-call when non-null/non-empty (lets a library set its
+        // own identity, e.g. "VKM-GL") and falls back to the Logger's init
+        // suffix otherwise.
+        const char* eff = (suffix && *suffix) ? suffix : m_suffix.c_str();
+        logStream << "[" << getTimestamp() << "] [" << eff << "]";
         if (category && *category) {
             logStream << " [" << category << "]";
         }

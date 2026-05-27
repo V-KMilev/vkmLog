@@ -59,13 +59,16 @@ class Logger {
         /**
          * @brief Logs a formatted message with the given log level.
          * @param level Log level for the message.
+         * @param suffix Optional suffix override for this line (e.g. "VKM-GL"
+         *               for vkmGL-library calls). Pass nullptr or "" to fall
+         *               back to the Logger's init suffix.
          * @param category Optional subsystem tag printed between the suffix
-         *                 and the level (e.g. "CORE", "RENDER", "BACKEND::GL").
+         *                 and the level (e.g. "CORE", "RENDER", "SHADER").
          *                 Pass nullptr or "" to omit the tag entirely.
          * @param format printf-style format string.
          * @param ... Arguments for the format string.
          */
-        void log(LogLevel level, const char* category, const char* format, ...);
+        void log(LogLevel level, const char* suffix, const char* category, const char* format, ...);
 
     private:
         /**
@@ -105,6 +108,15 @@ class Logger {
         static std::unique_ptr<Logger> s_instance;
 };
 
+// Per-file suffix override. Define before #include "logger.h" to override the
+// app-wide suffix set at Logger::init() time - useful for libraries that
+// want their own identity bracket (e.g. vkmGL files define "VKM-GL" so
+// their lines read [VKM-GL] [SHADER] instead of [VKM-ENGINE] [SHADER]).
+// Files that don't define it fall back to the init suffix.
+#ifndef VKM_LOG_SUFFIX
+    #define VKM_LOG_SUFFIX nullptr
+#endif
+
 // Per-file category tag. Define before #include "logger.h" to label every
 // LOG_* call in that translation unit:
 //   #define VKM_LOG_CATEGORY "RENDER"
@@ -115,9 +127,10 @@ class Logger {
     #define VKM_LOG_CATEGORY nullptr
 #endif
 
-// Macros for easy logging. Category comes from VKM_LOG_CATEGORY at the call
-// site; use LOG_*_C(category, ...) variants to override for a single call.
-#define LOG(level, format, ...)  Logger::getInstance().log(level, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
+// Macros for easy logging. Suffix + category come from VKM_LOG_SUFFIX and
+// VKM_LOG_CATEGORY at the call site; use LOG_*_C(category, ...) variants to
+// override the category for a single call.
+#define LOG(level, format, ...)  Logger::getInstance().log(level, VKM_LOG_SUFFIX, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
 #define LOG_TRACE(format, ...)   LOG(LogLevel::TRACE, format, ##__VA_ARGS__)
 #define LOG_VERBOSE(format, ...) LOG(LogLevel::VERBOSE, format, ##__VA_ARGS__)
 #define LOG_DEBUG(format, ...)   LOG(LogLevel::DEBUG, format, ##__VA_ARGS__)
@@ -127,8 +140,9 @@ class Logger {
 #define LOG_FATAL(format, ...)   LOG(LogLevel::FATAL, format, ##__VA_ARGS__)
 
 // Explicit-category variants. Use for inline log calls in headers, or when a
-// single line needs to override the file's default category.
-#define LOG_C(level, category, format, ...)  Logger::getInstance().log(level, category, format, ##__VA_ARGS__)
+// single line needs to override the file's default category. Suffix still
+// comes from the call site's VKM_LOG_SUFFIX.
+#define LOG_C(level, category, format, ...)  Logger::getInstance().log(level, VKM_LOG_SUFFIX, category, format, ##__VA_ARGS__)
 #define LOG_TRACE_C(category, format, ...)   LOG_C(LogLevel::TRACE, category, format, ##__VA_ARGS__)
 #define LOG_VERBOSE_C(category, format, ...) LOG_C(LogLevel::VERBOSE, category, format, ##__VA_ARGS__)
 #define LOG_DEBUG_C(category, format, ...)   LOG_C(LogLevel::DEBUG, category, format, ##__VA_ARGS__)
