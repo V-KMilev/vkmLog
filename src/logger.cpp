@@ -49,17 +49,18 @@ bool Logger::init(const std::string& filename, const std::string& suffix, LogLev
 Logger& Logger::getInstance() {
     if (!s_instance || !s_isInitialized) {
         printf("ERROR: Logger not initialized! Call Logger::init() before using.\n");
+        throw std::runtime_error("Logger not initialized! Call Logger::init() before using.");
     }
     return *s_instance;
 }
 
-void Logger::log(LogLevel level, const char* format, ...) {
-    if (!m_file.is_open()) {
-        printf("WARNING: Failed to open log file: %s\n", m_filename.c_str());
+void Logger::log(LogLevel level, const char* suffix, const char* category, const char* format, ...) {
+    if (level < m_level) {
         return;
     }
 
-    if (level < m_level) {
+    if (!m_file.is_open()) {
+        printf("WARNING: Failed to open log file: %s\n", m_filename.c_str());
         return;
     }
 
@@ -87,7 +88,15 @@ void Logger::log(LogLevel level, const char* format, ...) {
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         std::ostringstream logStream;
-        logStream << "[" << getTimestamp() << "] [" << m_suffix << "] [" << levelToString(level) << "] " << formattedMsg << "\n";
+        // Suffix is per-call when non-null/non-empty (lets a library set its
+        // own identity, e.g. "VKM-GL") and falls back to the Logger's init
+        // suffix otherwise.
+        const char* eff = (suffix && *suffix) ? suffix : m_suffix.c_str();
+        logStream << "[" << getTimestamp() << "] [" << eff << "]";
+        if (category && *category) {
+            logStream << " [" << category << "]";
+        }
+        logStream << " [" << levelToString(level) << "] " << formattedMsg << "\n";
 
         // Output to console
         printf("%s", logStream.str().c_str());
@@ -100,6 +109,8 @@ void Logger::log(LogLevel level, const char* format, ...) {
 
 std::string Logger::levelToString(LogLevel level) {
     switch (level) {
+        case LogLevel::TRACE:   return "TRACE";
+        case LogLevel::VERBOSE: return "VERBOSE";
         case LogLevel::DEBUG:   return "DEBUG";
         case LogLevel::INFO:    return "INFO";
         case LogLevel::WARNING: return "WARNING";
@@ -119,6 +130,14 @@ std::string Logger::getTimestamp() {
     localtime_r(&nowTime, &timeInfo);
 #endif
     std::ostringstream timestampStream;
+    // Get milliseconds
+    auto now_ms = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now_ms.time_since_epoch()
+    ) % 1000;
+
     timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+    timestampStream << '.' << std::setfill('0') << std::setw(3) << ms.count();
+
     return timestampStream.str();
 }

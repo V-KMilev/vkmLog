@@ -12,7 +12,7 @@ set(SOURCES
     ${SRC_DIR}/l_assert.cpp
 )
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
 )
 
