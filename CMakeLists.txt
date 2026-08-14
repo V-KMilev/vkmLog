@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.21.2)
 
-project(vkmLog VERSION 0.0.1)
+set(PROJECT_NAME vkmLog)
+set(PROJECT_VERSION_MAJOR 0)
+set(PROJECT_VERSION_MINOR 0)
+set(PROJECT_VERSION_PATCH 2)
+
+project(
+  ${PROJECT_NAME}
+  VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+)
 
 message("[VKMLOG] Main object:")
 message("\t- ${PROJECT_NAME}")
