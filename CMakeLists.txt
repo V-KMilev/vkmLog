@@ -24,8 +24,11 @@ add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
 )
 
+# Split so the same include resolves against this tree during development and
+# against <prefix>/include when vkmLog ships inside an SDK that exports it.
 target_include_directories(${PROJECT_NAME} PUBLIC
-    ${SRC_DIR}
+    $<BUILD_INTERFACE:${SRC_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
