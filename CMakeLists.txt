@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21.2)
 
-set(PROJECT_NAME vkmLog)
+set(PROJECT_NAME vkm_log)
 set(PROJECT_VERSION_MAJOR 1)
 set(PROJECT_VERSION_MINOR 0)
 set(PROJECT_VERSION_PATCH 0)
@@ -10,7 +10,7 @@ project(
   VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
 )
 
-message("[VKMLOG] Main object:")
+message("[VKM_LOG] Main object:")
 message("\t- ${PROJECT_NAME}")
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -25,7 +25,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 # Split so the same include resolves against this tree during development and
-# against <prefix>/include when vkmLog ships inside an SDK that exports it.
+# against <prefix>/include when vkm_log ships inside an SDK that exports it.
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${SRC_DIR}>
     $<INSTALL_INTERFACE:include>
