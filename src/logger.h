@@ -5,6 +5,8 @@
 #include <mutex>
 #include <memory>
 
+namespace Vkm::Log {
+
 /**
  * @brief Log levels for the Logger.
  */
@@ -108,6 +110,8 @@ class Logger {
         static std::unique_ptr<Logger> s_instance;
 };
 
+} // namespace Vkm::Log
+
 // Per-file suffix override. Define before #include "logger.h" to override the
 // app-wide suffix set at Logger::init() time - useful for libraries that
 // want their own identity bracket (e.g. vkmGL files define "VKM-GL" so
@@ -130,23 +134,25 @@ class Logger {
 // Macros for easy logging. Suffix + category come from VKM_LOG_SUFFIX and
 // VKM_LOG_CATEGORY at the call site; use LOG_*_C(category, ...) variants to
 // override the category for a single call.
-#define LOG(level, format, ...)  Logger::getInstance().log(level, VKM_LOG_SUFFIX, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
-#define LOG_TRACE(format, ...)   LOG(LogLevel::TRACE, format, ##__VA_ARGS__)
-#define LOG_VERBOSE(format, ...) LOG(LogLevel::VERBOSE, format, ##__VA_ARGS__)
-#define LOG_DEBUG(format, ...)   LOG(LogLevel::DEBUG, format, ##__VA_ARGS__)
-#define LOG_INFO(format, ...)    LOG(LogLevel::INFO, format, ##__VA_ARGS__)
-#define LOG_WARNING(format, ...) LOG(LogLevel::WARNING, format, ##__VA_ARGS__)
-#define LOG_ERROR(format, ...)   LOG(LogLevel::ERROR, format, ##__VA_ARGS__)
-#define LOG_FATAL(format, ...)   LOG(LogLevel::FATAL, format, ##__VA_ARGS__)
+#define LOG(level, format, ...) \
+    Vkm::Log::Logger::getInstance().log(level, VKM_LOG_SUFFIX, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
+#define LOG_TRACE(format, ...)   LOG(Vkm::Log::LogLevel::TRACE, format, ##__VA_ARGS__)
+#define LOG_VERBOSE(format, ...) LOG(Vkm::Log::LogLevel::VERBOSE, format, ##__VA_ARGS__)
+#define LOG_DEBUG(format, ...)   LOG(Vkm::Log::LogLevel::DEBUG, format, ##__VA_ARGS__)
+#define LOG_INFO(format, ...)    LOG(Vkm::Log::LogLevel::INFO, format, ##__VA_ARGS__)
+#define LOG_WARNING(format, ...) LOG(Vkm::Log::LogLevel::WARNING, format, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...)   LOG(Vkm::Log::LogLevel::ERROR, format, ##__VA_ARGS__)
+#define LOG_FATAL(format, ...)   LOG(Vkm::Log::LogLevel::FATAL, format, ##__VA_ARGS__)
 
 // Explicit-category variants. Use for inline log calls in headers, or when a
 // single line needs to override the file's default category. Suffix still
 // comes from the call site's VKM_LOG_SUFFIX.
-#define LOG_C(level, category, format, ...)  Logger::getInstance().log(level, VKM_LOG_SUFFIX, category, format, ##__VA_ARGS__)
-#define LOG_TRACE_C(category, format, ...)   LOG_C(LogLevel::TRACE, category, format, ##__VA_ARGS__)
-#define LOG_VERBOSE_C(category, format, ...) LOG_C(LogLevel::VERBOSE, category, format, ##__VA_ARGS__)
-#define LOG_DEBUG_C(category, format, ...)   LOG_C(LogLevel::DEBUG, category, format, ##__VA_ARGS__)
-#define LOG_INFO_C(category, format, ...)    LOG_C(LogLevel::INFO, category, format, ##__VA_ARGS__)
-#define LOG_WARNING_C(category, format, ...) LOG_C(LogLevel::WARNING, category, format, ##__VA_ARGS__)
-#define LOG_ERROR_C(category, format, ...)   LOG_C(LogLevel::ERROR, category, format, ##__VA_ARGS__)
-#define LOG_FATAL_C(category, format, ...)   LOG_C(LogLevel::FATAL, category, format, ##__VA_ARGS__)
+#define LOG_C(level, category, format, ...) \
+    Vkm::Log::Logger::getInstance().log(level, VKM_LOG_SUFFIX, category, format, ##__VA_ARGS__)
+#define LOG_TRACE_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::TRACE, category, format, ##__VA_ARGS__)
+#define LOG_VERBOSE_C(category, format, ...) LOG_C(Vkm::Log::LogLevel::VERBOSE, category, format, ##__VA_ARGS__)
+#define LOG_DEBUG_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::DEBUG, category, format, ##__VA_ARGS__)
+#define LOG_INFO_C(category, format, ...)    LOG_C(Vkm::Log::LogLevel::INFO, category, format, ##__VA_ARGS__)
+#define LOG_WARNING_C(category, format, ...) LOG_C(Vkm::Log::LogLevel::WARNING, category, format, ##__VA_ARGS__)
+#define LOG_ERROR_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::ERROR, category, format, ##__VA_ARGS__)
+#define LOG_FATAL_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::FATAL, category, format, ##__VA_ARGS__)
