@@ -6,7 +6,9 @@
 
 #include "logger.h"
 
-void __assert_fail(
+namespace Vkm::Log {
+
+void assertFail(
     const char* expected_str,
     const char* file,
     int line,
@@ -32,3 +34,5 @@ void __assert_fail(
     abort();
 #endif
 }
+
+} // namespace Vkm::Log

@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Vkm::Log {
+
 /**
  * @brief Assertion failure handler. Logs and aborts; never returns.
  *
@@ -17,7 +19,7 @@
  * @param fmt  Optional printf-style format. nullptr means no message.
  * @param ...  printf-style varargs for @p fmt.
  */
-void __assert_fail(
+void assertFail(
     const char* expected_str,
     const char* file,
     int line,
@@ -25,12 +27,14 @@ void __assert_fail(
     ...
 );
 
+} // namespace Vkm::Log
+
 /**
  * @brief Assertion macro with logging, source location, and optional printf-
  *        style message.
  *
- * Evaluates 'Expected'; on false, calls __assert_fail which logs and aborts.
- * The macro short-circuits cheaply so a passing assert costs only the
+ * Evaluates 'Expected'; on false, calls Vkm::Log::assertFail, which logs and
+ * aborts. The macro short-circuits cheaply so a passing assert costs only the
  * condition evaluation.
  *
  * Usage:
@@ -45,12 +49,12 @@ void __assert_fail(
 // Release build: disable assertion checking for performance.
  #define VKM_ASSERT(Expected, ...) ((void)0)
 #else
-// Debug build: evaluate the condition once; on failure pass everything to
-// __assert_fail. The ##__VA_ARGS__ GCC/Clang extension eats the leading
-// comma when no message is supplied, so VKM_ASSERT(cond) compiles cleanly.
-#define VKM_ASSERT(Expected, ...)                                       \
-    do {                                                                \
-        if (!(Expected))                                                \
-            __assert_fail(#Expected, __FILE__, __LINE__, ##__VA_ARGS__);\
+// Debug build: evaluate the condition once; on failure pass everything to the
+// handler. The ##__VA_ARGS__ GCC/Clang extension eats the leading comma when no
+// message is supplied, so VKM_ASSERT(cond) compiles cleanly.
+#define VKM_ASSERT(Expected, ...)                                               \
+    do {                                                                        \
+        if (!(Expected))                                                        \
+            Vkm::Log::assertFail(#Expected, __FILE__, __LINE__, ##__VA_ARGS__); \
     } while (0)
 #endif

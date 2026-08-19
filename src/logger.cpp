@@ -8,6 +8,8 @@
 #include <cstdarg>
 #include <vector>
 
+namespace Vkm::Log {
+
 // Static member initialization
 bool Logger::s_isInitialized = false;
 std::unique_ptr<Logger> Logger::s_instance = nullptr;
@@ -141,3 +143,5 @@ std::string Logger::getTimestamp() {
 
     return timestampStream.str();
 }
+
+} // namespace Vkm::Log
