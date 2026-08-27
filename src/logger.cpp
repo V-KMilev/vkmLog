@@ -100,8 +100,13 @@ void Logger::log(LogLevel level, const char* suffix, const char* category, const
         }
         logStream << " [" << levelToString(level) << "] " << formattedMsg << "\n";
 
-        // Output to console
+        // Output to console, flushed. stdout is line-buffered only when it is a
+        // terminal; piped to a log collector - journalctl, docker logs - it is
+        // fully buffered, and a long-running headless process shows nothing at
+        // all until four kilobytes have accumulated or it exits. A log nobody
+        // can read while it matters is not a log.
         printf("%s", logStream.str().c_str());
+        fflush(stdout);
 
         // Output to log file
         m_file << logStream.str();
