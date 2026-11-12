@@ -3,7 +3,14 @@
 namespace Vkm::Log {
 
 /**
- * @brief Assertion failure handler. Logs and aborts; never returns.
+ * @brief Stop the program where a check failed: break into the debugger on Windows, abort elsewhere.
+ *
+ * A caller logs why first. Under a debugger on Windows, continuing the run returns from it.
+ */
+void stopProgram();
+
+/**
+ * @brief Assertion failure handler. Logs, then stops the program (stopProgram).
  *
  * Called by VKM_ASSERT when its condition is false. Accepts an optional
  * printf-style format string + arguments so callers can include diagnostic
@@ -34,7 +41,7 @@ void assertFail(
  *        style message.
  *
  * Evaluates 'Expected'; on false, calls Vkm::Log::assertFail, which logs and
- * aborts. The macro short-circuits cheaply so a passing assert costs only the
+ * stops the program. The macro short-circuits cheaply so a passing assert costs only the
  * condition evaluation.
  *
  * Usage:

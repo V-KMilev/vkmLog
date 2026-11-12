@@ -8,6 +8,14 @@
 
 namespace Vkm::Log {
 
+void stopProgram() {
+#ifdef _WIN32
+    __debugbreak();
+#else
+    abort();
+#endif
+}
+
 void assertFail(
     const char* expected_str,
     const char* file,
@@ -27,12 +35,7 @@ void assertFail(
         LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s', Info: %s",
             file, line, expected_str, buf);
     }
-
-#ifdef _WIN32
-    __debugbreak();
-#else
-    abort();
-#endif
+    stopProgram();
 }
 
 } // namespace Vkm::Log
