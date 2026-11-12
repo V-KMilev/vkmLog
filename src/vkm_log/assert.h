@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vkm_log/logger.h"
+
 namespace Vkm::Log {
 
 /**
@@ -20,14 +22,18 @@ void stopProgram();
  *     VKM_ASSERT(ok, "load failed");                    // static message
  *     VKM_ASSERT(idx < n, "slot %u out of %zu", idx, n);// printf-style
  *
- * @param expected_str String form of the failed condition (from the macro).
- * @param file Source file where the assertion failed.
- * @param line Line in @p file.
- * @param fmt  Optional printf-style format. nullptr means no message.
- * @param ...  printf-style varargs for @p fmt.
+ * @param suffix    The asserting code's VKM_LOG_SUFFIX, so the line says whose it is.
+ * @param category  The asserting code's VKM_LOG_CATEGORY.
+ * @param condition String form of the failed condition (from the macro).
+ * @param file      Source file where the assertion failed.
+ * @param line      Line in @p file.
+ * @param fmt       Optional printf-style format. nullptr means no message.
+ * @param ...       printf-style varargs for @p fmt.
  */
 void assertFail(
-    const char* expected_str,
+    const char* suffix,
+    const char* category,
+    const char* condition,
     const char* file,
     int line,
     const char* fmt = nullptr,
@@ -53,15 +59,17 @@ void assertFail(
  * @param ...      Optional printf-style format string + arguments.
  */
 #ifdef NDEBUG
-// Release build: disable assertion checking for performance.
- #define VKM_ASSERT(Expected, ...) ((void)0)
+// With NDEBUG: compiled out, the condition unevaluated.
+#define VKM_ASSERT(Expected, ...) ((void)0)
 #else
-// Debug build: evaluate the condition once; on failure pass everything to the
+// Without it: evaluate the condition once; on failure pass everything to the
 // handler. The ##__VA_ARGS__ GCC/Clang extension eats the leading comma when no
 // message is supplied, so VKM_ASSERT(cond) compiles cleanly.
-#define VKM_ASSERT(Expected, ...)                                               \
-    do {                                                                        \
-        if (!(Expected))                                                        \
-            Vkm::Log::assertFail(#Expected, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define VKM_ASSERT(Expected, ...)                                                                   \
+    do {                                                                                            \
+        if (!(Expected))                                                                            \
+            Vkm::Log::assertFail(                                                                   \
+                VKM_LOG_SUFFIX, VKM_LOG_CATEGORY, #Expected, __FILE__, __LINE__, ##__VA_ARGS__      \
+            );                                                                                      \
     } while (0)
 #endif

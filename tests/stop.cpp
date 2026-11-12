@@ -3,6 +3,10 @@
 // VKM_ASSERT as a build without NDEBUG sees it, whatever this suite's build type defines.
 #undef NDEBUG
 
+// Whose lines these are, as a library's target and file say it.
+#define VKM_LOG_SUFFIX   "VKM-CALLER"
+#define VKM_LOG_CATEGORY "CHECKS"
+
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -41,6 +45,22 @@ TEST("a failing VKM_ASSERT logs one ERROR line with its file, line, expression a
     CHECK(message.find(std::string(__FILE__) + ":" + std::to_string(line)) != std::string::npos);
     CHECK(message.find("1 + 1 == 3") != std::string::npos);
     CHECK(message.find("fmt 1") != std::string::npos);
+}
+
+TEST("a failing VKM_ASSERT's line carries the suffix and category of the code that asserted") {
+    const std::filesystem::path path = Vkm::Test::scratch() / "test.log";
+    const Ended ended = inChild([&] {
+        Vkm::Log::Logger::init(path, "VKM-TESTS", Vkm::Log::Level::Info);
+        VKM_ASSERT(false, "whose");
+    });
+    CHECK(ended == Ended::Stopped);
+
+    const std::string text = Vkm::Test::readText(path);
+    REQUIRE(!text.empty());
+    const auto logged = Vkm::Log::parseLine(std::string_view(text).substr(0, text.size() - 1));
+    REQUIRE(logged.has_value());
+    CHECK(logged->suffix == "VKM-CALLER");
+    CHECK(logged->category == "CHECKS");
 }
 
 TEST("a passing VKM_ASSERT evaluates its condition once and goes on") {

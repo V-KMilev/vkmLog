@@ -4,8 +4,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "vkm_log/logger.h"
-
 namespace Vkm::Log {
 
 void stopProgram() {
@@ -17,23 +15,41 @@ void stopProgram() {
 }
 
 void assertFail(
-    const char* expected_str,
+    const char* suffix,
+    const char* category,
+    const char* condition,
     const char* file,
     int line,
     const char* fmt,
     ...
 ) {
+    Logger& logger = Logger::getInstance();
     if (fmt == nullptr) {
-        LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s'",
-            file, line, expected_str);
+        logger.log(
+            Level::Error,
+            suffix,
+            category,
+            "VKM ASSERT Failed!\t[%s:%d] Expected: '%s'",
+            file,
+            line,
+            condition
+        );
     } else {
         char buf[512];
         va_list ap;
         va_start(ap, fmt);
         vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
-        LOG_ERROR("VKM ASSERT Failed!\t[%s:%d] Expected: '%s', Info: %s",
-            file, line, expected_str, buf);
+        logger.log(
+            Level::Error,
+            suffix,
+            category,
+            "VKM ASSERT Failed!\t[%s:%d] Expected: '%s', Info: %s",
+            file,
+            line,
+            condition,
+            buf
+        );
     }
     stopProgram();
 }
