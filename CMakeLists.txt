@@ -32,5 +32,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+# Public: its headers are C++17 (string_view, optional, filesystem), so whatever includes them is too.
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
 )
