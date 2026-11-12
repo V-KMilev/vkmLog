@@ -1,12 +1,14 @@
 #include "vkm_log/logger.h"
 
 #include <array>
+#include <chrono>
+#include <cstdarg>
+#include <cstdio>
+#include <ctime>
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
-#include <chrono>
-#include <ctime>
-#include <cstdarg>
+#include <stdexcept>
 #include <vector>
 
 namespace Vkm::Log {
@@ -25,9 +27,30 @@ constexpr std::string_view LEVEL_NAMES[] = {
 };
 static_assert(std::size(LEVEL_NAMES) == static_cast<size_t>(Level::Count), "a name for each level");
 
+/// Now, local time, as "YYYY-MM-DD HH:MM:SS.mmm".
+std::string timestamp() {
+    auto now     = std::chrono::system_clock::now();
+    auto nowTime = std::chrono::system_clock::to_time_t(now);
+    std::tm timeInfo;
+#ifdef _WIN32
+    localtime_s(&timeInfo, &nowTime);
+#else
+    localtime_r(&nowTime, &timeInfo);
+#endif
+    std::ostringstream timestampStream;
+    // From the same reading as the seconds: a second reading may have crossed into the next second.
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()
+    ) % 1000;
+
+    timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+    timestampStream << '.' << std::setfill('0') << std::setw(3) << ms.count();
+
+    return timestampStream.str();
+}
+
 } // namespace
 
-// Static member initialization
 std::unique_ptr<Logger> Logger::s_instance = nullptr;
 
 Logger::Logger(
@@ -48,12 +71,6 @@ Logger::Logger(
     m_path     = path;
     m_runStart = std::filesystem::file_size(path, ec);
     if (ec) m_runStart = 0;
-}
-
-Logger::~Logger() {
-    if (m_file.is_open()) {
-        m_file.close();
-    }
 }
 
 bool Logger::init(const std::filesystem::path& path, const std::string& suffix, Level level) {
@@ -97,30 +114,25 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
         va_end(args);
     }
 
-    std::string formattedMsg(buffer.data());
-
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         std::ostringstream logStream;
         // The form parseLine reads.
         const char* eff = (suffix && *suffix) ? suffix : m_suffix.c_str();
-        logStream << "[" << getTimestamp() << "] [" << eff << "]";
+        logStream << "[" << timestamp() << "] [" << eff << "]";
         if (category && *category) {
             logStream << " [" << category << "]";
         }
-        logStream << " [" << levelName(level) << "] " << formattedMsg << "\n";
+        logStream << " [" << levelName(level) << "] " << buffer.data() << "\n";
+        const std::string line = logStream.str();
 
-        // Output to console, flushed. stdout is line-buffered only when it is a
-        // terminal; piped to a log collector - journalctl, docker logs - it is
-        // fully buffered, and a long-running headless process shows nothing at
-        // all until four kilobytes have accumulated or it exits. A log nobody
-        // can read while it matters is not a log.
-        printf("%s", logStream.str().c_str());
+        // Flushed: piped to a log collector, stdout is fully buffered, and a headless process would
+        // show nothing until it exits.
+        printf("%s", line.c_str());
         fflush(stdout);
 
-        // Output to log file
         if (m_file.is_open()) {
-            m_file << logStream.str();
+            m_file << line;
             m_file.flush();
         }
     }
@@ -162,27 +174,6 @@ std::optional<Line> parseLine(std::string_view text) {
         }
     }
     return std::nullopt;
-}
-
-std::string Logger::getTimestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto nowTime = std::chrono::system_clock::to_time_t(now);
-    std::tm timeInfo;
-#ifdef _WIN32
-    localtime_s(&timeInfo, &nowTime);
-#else
-    localtime_r(&nowTime, &timeInfo);
-#endif
-    std::ostringstream timestampStream;
-    // From the same reading as the seconds: a second reading may have crossed into the next second.
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()
-    ) % 1000;
-
-    timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
-    timestampStream << '.' << std::setfill('0') << std::setw(3) << ms.count();
-
-    return timestampStream.str();
 }
 
 } // namespace Vkm::Log

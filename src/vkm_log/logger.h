@@ -3,11 +3,11 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <mutex>
-#include <memory>
 
 // A printf-style function's format, checked against its arguments where the compiler can: the
 // 1-based places of the format and of its first argument (a member function's `this` is 1).
@@ -72,13 +72,13 @@ std::optional<Line> parseLine(std::string_view text);
 class Logger {
     public:
         Logger() = delete;
-        ~Logger();
+        ~Logger() = default;
 
-        Logger(const Logger&) = delete;
-        Logger& operator=(const Logger&) = delete;
+        Logger(const Logger& other) = delete;
+        Logger& operator=(const Logger& other) = delete;
 
-        Logger(Logger&&) = delete;
-        Logger& operator=(Logger&&) = delete;
+        Logger(Logger && other) = delete;
+        Logger& operator=(Logger && other) = delete;
 
     public:
         /**
@@ -99,8 +99,10 @@ class Logger {
         );
 
         /**
-         * @brief Gets the singleton instance of the logger.
-         * @return Reference to the Logger instance.
+         * @brief The logger init made, for every LOG_* call.
+         *
+         * @return The one logger.
+         * @throws std::runtime_error when init was never called.
          */
         static Logger& getInstance();
 
@@ -138,20 +140,14 @@ class Logger {
             Level level
         );
 
-        /**
-         * @brief Gets the current timestamp as a string.
-         * @return Timestamp string in "YYYY-MM-DD HH:MM:SS" format.
-         */
-        std::string getTimestamp();
-
     private:
-        std::filesystem::path m_path;
+        std::filesystem::path m_path;                ///< Empty when the file did not open.
         std::uintmax_t        m_runStart = 0;
-        std::string           m_suffix;
-        Level                 m_level;
+        std::string           m_suffix;              ///< A line's suffix when its call names none.
+        Level                 m_level = Level::Info; ///< The least a line must be to be written.
 
         std::ofstream m_file;
-        std::mutex m_mutex;
+        std::mutex    m_mutex;  ///< One line at a time, to the console and the file.
 
         static std::unique_ptr<Logger> s_instance;
 };
