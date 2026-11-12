@@ -37,3 +37,10 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 )
+
+# The suite (tests/), built when a consumer, or this project built alone, asks for it.
+option(VKM_LOG_BUILD_TESTS "Build the vkm_log test suite" OFF)
+if(VKM_LOG_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
