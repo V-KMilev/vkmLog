@@ -18,3 +18,15 @@ target_compile_options(vkm_log_tests PRIVATE
 # list to keep.
 include(${CMAKE_CURRENT_SOURCE_DIR}/harness/discover.cmake)
 vkm_discover_tests(vkm_log_tests vkm_log)
+
+# The library as a consumer compiles it.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_test(NAME "vkm_log: a log or assert call whose arguments do not fit its format is a compile error under -Werror=format"
+        COMMAND ${CMAKE_COMMAND} -DCXX=${CMAKE_CXX_COMPILER} -DSOURCE_DIR=${PROJECT_SOURCE_DIR}/src
+            -DFIXTURE=${CMAKE_CURRENT_SOURCE_DIR}/fixture/formats.cpp -P ${CMAKE_CURRENT_SOURCE_DIR}/format.cmake
+    )
+    set_tests_properties(
+        "vkm_log: a log or assert call whose arguments do not fit its format is a compile error under -Werror=format"
+        PROPERTIES LABELS vkm_log
+    )
+endif()

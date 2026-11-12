@@ -9,6 +9,14 @@
 #include <mutex>
 #include <memory>
 
+// A printf-style function's format, checked against its arguments where the compiler can: the
+// 1-based places of the format and of its first argument (a member function's `this` is 1).
+#if defined(__GNUC__) || defined(__clang__)
+    #define VKM_LOG_PRINTF(formatAt, firstAt) __attribute__((format(printf, formatAt, firstAt)))
+#else
+    #define VKM_LOG_PRINTF(formatAt, firstAt)
+#endif
+
 namespace Vkm::Log {
 
 /**
@@ -107,7 +115,8 @@ class Logger {
          * @param format printf-style format string.
          * @param ... Arguments for the format string.
          */
-        void log(Level level, const char* suffix, const char* category, const char* format, ...);
+        void log(Level level, const char* suffix, const char* category, const char* format, ...)
+            VKM_LOG_PRINTF(5, 6);
 
     public:
         /// The file lines are appended to; empty when it did not open.

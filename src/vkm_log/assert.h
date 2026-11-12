@@ -38,7 +38,7 @@ void assertFail(
     int line,
     const char* fmt = nullptr,
     ...
-);
+) VKM_LOG_PRINTF(6, 7);
 
 } // namespace Vkm::Log
 
