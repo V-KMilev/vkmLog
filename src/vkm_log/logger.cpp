@@ -1,5 +1,6 @@
 #include "vkm_log/logger.h"
 
+#include <array>
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
@@ -9,6 +10,22 @@
 #include <vector>
 
 namespace Vkm::Log {
+
+namespace {
+
+/// Each level's name, in Level's order.
+constexpr std::string_view LEVEL_NAMES[] = {
+    "TRACE",
+    "VERBOSE",
+    "DEBUG",
+    "INFO",
+    "WARNING",
+    "ERROR",
+    "FATAL"
+};
+static_assert(std::size(LEVEL_NAMES) == static_cast<size_t>(Level::Count), "a name for each level");
+
+} // namespace
 
 // Static member initialization
 std::unique_ptr<Logger> Logger::s_instance = nullptr;
@@ -85,15 +102,13 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         std::ostringstream logStream;
-        // Suffix is per-call when non-null/non-empty (lets a library set its
-        // own identity, e.g. "VKM-GL") and falls back to the Logger's init
-        // suffix otherwise.
+        // The form parseLine reads.
         const char* eff = (suffix && *suffix) ? suffix : m_suffix.c_str();
         logStream << "[" << getTimestamp() << "] [" << eff << "]";
         if (category && *category) {
             logStream << " [" << category << "]";
         }
-        logStream << " [" << levelToString(level) << "] " << formattedMsg << "\n";
+        logStream << " [" << levelName(level) << "] " << formattedMsg << "\n";
 
         // Output to console, flushed. stdout is line-buffered only when it is a
         // terminal; piped to a log collector - journalctl, docker logs - it is
@@ -111,17 +126,42 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
     }
 }
 
-std::string Logger::levelToString(Level level) {
-    switch (level) {
-        case Level::Trace:   return "TRACE";
-        case Level::Verbose: return "VERBOSE";
-        case Level::Debug:   return "DEBUG";
-        case Level::Info:    return "INFO";
-        case Level::Warning: return "WARNING";
-        case Level::Error:   return "ERROR";
-        case Level::Fatal:   return "FATAL";
-        default:                return "UNKNOWN";
+std::string_view levelName(Level level) {
+    const size_t index = static_cast<size_t>(level);
+    return index < std::size(LEVEL_NAMES) ? LEVEL_NAMES[index] : "UNKNOWN";
+}
+
+std::optional<Line> parseLine(std::string_view text) {
+    // The bracketed fields at the front, up to four: time, suffix, category, level.
+    constexpr size_t MAX_FIELDS = 4;
+
+    std::array<std::string_view, MAX_FIELDS> fields;
+    std::array<size_t, MAX_FIELDS>           after{};  // Where the text past each field starts.
+    size_t count = 0;
+    size_t at    = 0;
+    while (count < MAX_FIELDS && at < text.size() && text[at] == '[') {
+        const size_t close = text.find(']', at);
+        if (close == std::string_view::npos) break;
+        fields[count] = text.substr(at + 1, close - at - 1);
+        at            = close + 1;
+        if (at < text.size() && text[at] == ' ') ++at;
+        after[count++] = at;
     }
+
+    // The category is optional, so the level is the third field or the fourth.
+    for (size_t field = 2; field < count; ++field) {
+        for (size_t index = 0; index < std::size(LEVEL_NAMES); ++index) {
+            if (fields[field] != LEVEL_NAMES[index]) continue;
+            Line line;
+            line.time     = fields[0];
+            line.suffix   = fields[1];
+            line.category = field == 3 ? fields[2] : std::string_view();
+            line.level    = static_cast<Level>(index);
+            line.message  = text.substr(after[field]);
+            return line;
+        }
+    }
+    return std::nullopt;
 }
 
 std::string Logger::getTimestamp() {

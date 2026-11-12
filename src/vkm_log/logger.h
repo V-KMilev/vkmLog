@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <mutex>
 #include <memory>
 
@@ -19,8 +21,38 @@ enum class Level {
     Info,
     Warning,
     Error,
-    Fatal
+    Fatal,
+    Count  ///< Sentinel; keep last.
 };
+
+/**
+ * @brief The name a line carries for @p level, as the writer puts it between brackets.
+ *
+ * @param level Any value; one outside Trace to Fatal, such as Level::Count, has no level's name.
+ * @return "TRACE", "VERBOSE", "DEBUG", "INFO", "WARNING", "ERROR" or "FATAL"; "UNKNOWN" outside them.
+ */
+std::string_view levelName(Level level);
+
+/// One line as the logger writes it, each field a view into the text it was read from.
+struct Line {
+    std::string_view time;                 ///< "YYYY-MM-DD HH:MM:SS.mmm", local time.
+    std::string_view suffix;               ///< The init suffix, or the one the call named.
+    std::string_view category;             ///< Empty when the line has none.
+    Level            level = Level::Info;
+    std::string_view message;              ///< All after the level, its own brackets kept.
+};
+
+/**
+ * @brief Split @p text as the logger writes a line: "[time] [suffix] [category] [LEVEL] message".
+ *
+ * The level is the third bracketed field, or the fourth when a category comes first, so a message
+ * opening with brackets of its own keeps them.
+ *
+ * @param text One line, without its newline.
+ * @return Its fields, viewing @p text; nothing when neither its third nor its fourth leading bracketed
+ *         field is a level's name.
+ */
+std::optional<Line> parseLine(std::string_view text);
 
 /**
  * @brief Thread-safe singleton logger class for logging messages to file and console.
@@ -96,13 +128,6 @@ class Logger {
             const std::string& suffix,
             Level level
         );
-
-        /**
-         * @brief Converts a log level to its string representation.
-         * @param level Log level.
-         * @return String representation of the log level.
-         */
-        std::string levelToString(Level level);
 
         /**
          * @brief Gets the current timestamp as a string.
