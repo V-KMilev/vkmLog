@@ -174,10 +174,9 @@ std::string Logger::getTimestamp() {
     localtime_r(&nowTime, &timeInfo);
 #endif
     std::ostringstream timestampStream;
-    // Get milliseconds
-    auto now_ms = std::chrono::system_clock::now();
+    // From the same reading as the seconds: a second reading may have crossed into the next second.
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now_ms.time_since_epoch()
+        now.time_since_epoch()
     ) % 1000;
 
     timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
