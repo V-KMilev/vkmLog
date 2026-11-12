@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <mutex>
@@ -24,7 +26,7 @@ enum class Level {
  * @brief Thread-safe singleton logger class for logging messages to file and console.
  *
  * Usage:
- *   - Initialize once with Logger::init(filename, suffix,level)
+ *   - Initialize with Logger::init(path, suffix, level)
  *   - Use LOG_* macros for logging
  */
 class Logger {
@@ -40,14 +42,18 @@ class Logger {
 
     public:
         /**
-         * @brief Initializes the logger singleton.
-         * @param filename Path to the log file. (default: log.log)
-         * @param suffix Suffix aded to the log message (default: ROOT)
-         * @param level Minimum log level to output. (default: INFO)
-         * @return true if initialization succeeded, false if already initialized.
+         * @brief Initializes the logger singleton, writing to the console and to @p path.
+         *
+         * Lines reach the console whether or not the file opened. After false, init may be called
+         * again with another file, before any other thread logs.
+         *
+         * @param path   The log file, appended to; its folder is made when missing. (default: log.log)
+         * @param suffix Suffix added to the log message (default: ROOT)
+         * @param level  Minimum log level to output. (default: Info)
+         * @return Whether the file opened; false too when a logger with a file already exists.
          */
         static bool init(
-            const std::string& filename = "log.log",
+            const std::filesystem::path& path = "log.log",
             const std::string& suffix = "ROOT",
             Level level = Level::Info
         );
@@ -61,9 +67,8 @@ class Logger {
         /**
          * @brief Logs a formatted message with the given log level.
          * @param level Log level for the message.
-         * @param suffix Optional suffix override for this line (e.g. "VKM-GL"
-         *               for vkmGL-library calls). Pass nullptr or "" to fall
-         *               back to the Logger's init suffix.
+         * @param suffix Optional suffix override for this line. Pass nullptr or
+         *               "" to fall back to the Logger's init suffix.
          * @param category Optional subsystem tag printed between the suffix
          *                 and the level (e.g. "CORE", "RENDER", "SHADER").
          *                 Pass nullptr or "" to omit the tag entirely.
@@ -72,15 +77,22 @@ class Logger {
          */
         void log(Level level, const char* suffix, const char* category, const char* format, ...);
 
+    public:
+        /// The file lines are appended to; empty when it did not open.
+        const std::filesystem::path& path() const { return m_path; }
+
+        /// The file's size when this run opened it: where this run's lines begin.
+        std::uintmax_t runStart() const { return m_runStart; }
+
     private:
         /**
          * @brief Private constructor. Only accessible from getInstance/init.
-         * @param filename Path to the log file.
-         * @param suffix Suffix aded to the log message
+         * @param path The log file; the logger has none when it will not open.
+         * @param suffix Suffix added to the log message
          * @param level Minimum log level to output.
          */
         Logger(
-            const std::string& filename,
+            const std::filesystem::path& path,
             const std::string& suffix,
             Level level
         );
@@ -99,14 +111,14 @@ class Logger {
         std::string getTimestamp();
 
     private:
-        std::string m_filename;
-        std::string m_suffix;
-        Level m_level;
+        std::filesystem::path m_path;
+        std::uintmax_t        m_runStart = 0;
+        std::string           m_suffix;
+        Level                 m_level;
 
         std::ofstream m_file;
         std::mutex m_mutex;
 
-        static bool s_isInitialized;
         static std::unique_ptr<Logger> s_instance;
 };
 

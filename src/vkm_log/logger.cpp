@@ -11,25 +11,26 @@
 namespace Vkm::Log {
 
 // Static member initialization
-bool Logger::s_isInitialized = false;
 std::unique_ptr<Logger> Logger::s_instance = nullptr;
 
 Logger::Logger(
-    const std::string& filename,
+    const std::filesystem::path& path,
     const std::string& suffix,
     Level level
-) : m_filename(filename),
-    m_suffix(suffix),
-    m_level(level) {
-    // Ensure the log directory exists before opening the log file
-    size_t lastSlash = m_filename.find_last_of("/\\");
+)
+    : m_suffix(suffix)
+    , m_level(level)
+{
+    // A folder that cannot be made shows as a file that will not open.
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
 
-    if (lastSlash != std::string::npos) {
-        std::string dir = m_filename.substr(0, lastSlash);
-        std::filesystem::create_directories(dir);
-    }
+    m_file.open(path, std::ios::app);
+    if (!m_file.is_open()) return;
 
-    m_file.open(m_filename, std::ios::app);
+    m_path     = path;
+    m_runStart = std::filesystem::file_size(path, ec);
+    if (ec) m_runStart = 0;
 }
 
 Logger::~Logger() {
@@ -38,18 +39,17 @@ Logger::~Logger() {
     }
 }
 
-bool Logger::init(const std::string& filename, const std::string& suffix, Level level) {
-    if (s_isInitialized) {
-        printf("WARNING: Logger already initialized! Call Logger::init() only once.\n");
+bool Logger::init(const std::filesystem::path& path, const std::string& suffix, Level level) {
+    if (s_instance && s_instance->m_file.is_open()) {
+        printf("WARNING: Logger already writes to a file; Logger::init() is refused.\n");
         return false;
     }
-    s_isInitialized = true;
-    s_instance = std::unique_ptr<Logger>(new Logger(filename, suffix, level));
-    return true;
+    s_instance = std::unique_ptr<Logger>(new Logger(path, suffix, level));
+    return s_instance->m_file.is_open();
 }
 
 Logger& Logger::getInstance() {
-    if (!s_instance || !s_isInitialized) {
+    if (!s_instance) {
         printf("ERROR: Logger not initialized! Call Logger::init() before using.\n");
         throw std::runtime_error("Logger not initialized! Call Logger::init() before using.");
     }
@@ -58,11 +58,6 @@ Logger& Logger::getInstance() {
 
 void Logger::log(Level level, const char* suffix, const char* category, const char* format, ...) {
     if (level < m_level) {
-        return;
-    }
-
-    if (!m_file.is_open()) {
-        printf("WARNING: Failed to open log file: %s\n", m_filename.c_str());
         return;
     }
 
@@ -109,8 +104,10 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
         fflush(stdout);
 
         // Output to log file
-        m_file << logStream.str();
-        m_file.flush();
+        if (m_file.is_open()) {
+            m_file << logStream.str();
+            m_file.flush();
+        }
     }
 }
 
