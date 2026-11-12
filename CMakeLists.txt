@@ -16,16 +16,17 @@ message("\t- ${PROJECT_NAME}")
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(SOURCES
-    ${SRC_DIR}/logger.cpp
-    ${SRC_DIR}/l_assert.cpp
+    ${SRC_DIR}/vkm_log/logger.cpp
+    ${SRC_DIR}/vkm_log/assert.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
 )
 
-# Split so the same include resolves against this tree during development and
-# against <prefix>/include when vkm_log ships inside an SDK that exports it.
+# The root above vkm_log/, so an include names the library: "vkm_log/logger.h". Split so
+# it resolves against this tree during development and against <prefix>/include when
+# vkm_log ships inside an SDK that exports it.
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${SRC_DIR}>
     $<INSTALL_INTERFACE:include>

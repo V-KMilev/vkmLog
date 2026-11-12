@@ -10,14 +10,14 @@ namespace Vkm::Log {
 /**
  * @brief Log levels for the Logger.
  */
-enum class LogLevel {
-    TRACE,
-    VERBOSE,
-    DEBUG,
-    INFO,
-    WARNING,
-    ERROR,
-    FATAL
+enum class Level {
+    Trace,
+    Verbose,
+    Debug,
+    Info,
+    Warning,
+    Error,
+    Fatal
 };
 
 /**
@@ -49,7 +49,7 @@ class Logger {
         static bool init(
             const std::string& filename = "log.log",
             const std::string& suffix = "ROOT",
-            LogLevel level = LogLevel::INFO
+            Level level = Level::Info
         );
 
         /**
@@ -70,7 +70,7 @@ class Logger {
          * @param format printf-style format string.
          * @param ... Arguments for the format string.
          */
-        void log(LogLevel level, const char* suffix, const char* category, const char* format, ...);
+        void log(Level level, const char* suffix, const char* category, const char* format, ...);
 
     private:
         /**
@@ -82,7 +82,7 @@ class Logger {
         Logger(
             const std::string& filename,
             const std::string& suffix,
-            LogLevel level
+            Level level
         );
 
         /**
@@ -90,7 +90,7 @@ class Logger {
          * @param level Log level.
          * @return String representation of the log level.
          */
-        std::string levelToString(LogLevel level);
+        std::string levelToString(Level level);
 
         /**
          * @brief Gets the current timestamp as a string.
@@ -101,7 +101,7 @@ class Logger {
     private:
         std::string m_filename;
         std::string m_suffix;
-        LogLevel m_level;
+        Level m_level;
 
         std::ofstream m_file;
         std::mutex m_mutex;
@@ -112,21 +112,17 @@ class Logger {
 
 } // namespace Vkm::Log
 
-// Per-file suffix override. Define before #include "logger.h" to override the
-// app-wide suffix set at Logger::init() time - useful for libraries that
-// want their own identity bracket (e.g. vkmGL files define "VKM-GL" so
-// their lines read [VKM-GL] [SHADER] instead of [VKM-ENGINE] [SHADER]).
-// Files that don't define it fall back to the init suffix.
+// The suffix a library's lines carry in place of the init suffix, so they say whose they are.
+// A library defines it once for its whole target (target_compile_definitions), never per file.
+// Left undefined, a line carries the init suffix.
 #ifndef VKM_LOG_SUFFIX
     #define VKM_LOG_SUFFIX nullptr
 #endif
 
-// Per-file category tag. Define before #include "logger.h" to label every
-// LOG_* call in that translation unit:
+// The category every LOG_* call in a translation unit is tagged with, defined before the include:
 //   #define VKM_LOG_CATEGORY "RENDER"
-//   #include "logger.h"
-// Files that don't define it get no category bracket (back-compat with
-// pre-category logs).
+//   #include "vkm_log/logger.h"
+// Left undefined, a line has no category bracket.
 #ifndef VKM_LOG_CATEGORY
     #define VKM_LOG_CATEGORY nullptr
 #endif
@@ -136,23 +132,23 @@ class Logger {
 // override the category for a single call.
 #define LOG(level, format, ...) \
     Vkm::Log::Logger::getInstance().log(level, VKM_LOG_SUFFIX, VKM_LOG_CATEGORY, format, ##__VA_ARGS__)
-#define LOG_TRACE(format, ...)   LOG(Vkm::Log::LogLevel::TRACE, format, ##__VA_ARGS__)
-#define LOG_VERBOSE(format, ...) LOG(Vkm::Log::LogLevel::VERBOSE, format, ##__VA_ARGS__)
-#define LOG_DEBUG(format, ...)   LOG(Vkm::Log::LogLevel::DEBUG, format, ##__VA_ARGS__)
-#define LOG_INFO(format, ...)    LOG(Vkm::Log::LogLevel::INFO, format, ##__VA_ARGS__)
-#define LOG_WARNING(format, ...) LOG(Vkm::Log::LogLevel::WARNING, format, ##__VA_ARGS__)
-#define LOG_ERROR(format, ...)   LOG(Vkm::Log::LogLevel::ERROR, format, ##__VA_ARGS__)
-#define LOG_FATAL(format, ...)   LOG(Vkm::Log::LogLevel::FATAL, format, ##__VA_ARGS__)
+#define LOG_TRACE(format, ...)   LOG(Vkm::Log::Level::Trace, format, ##__VA_ARGS__)
+#define LOG_VERBOSE(format, ...) LOG(Vkm::Log::Level::Verbose, format, ##__VA_ARGS__)
+#define LOG_DEBUG(format, ...)   LOG(Vkm::Log::Level::Debug, format, ##__VA_ARGS__)
+#define LOG_INFO(format, ...)    LOG(Vkm::Log::Level::Info, format, ##__VA_ARGS__)
+#define LOG_WARNING(format, ...) LOG(Vkm::Log::Level::Warning, format, ##__VA_ARGS__)
+#define LOG_ERROR(format, ...)   LOG(Vkm::Log::Level::Error, format, ##__VA_ARGS__)
+#define LOG_FATAL(format, ...)   LOG(Vkm::Log::Level::Fatal, format, ##__VA_ARGS__)
 
 // Explicit-category variants. Use for inline log calls in headers, or when a
 // single line needs to override the file's default category. Suffix still
 // comes from the call site's VKM_LOG_SUFFIX.
 #define LOG_C(level, category, format, ...) \
     Vkm::Log::Logger::getInstance().log(level, VKM_LOG_SUFFIX, category, format, ##__VA_ARGS__)
-#define LOG_TRACE_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::TRACE, category, format, ##__VA_ARGS__)
-#define LOG_VERBOSE_C(category, format, ...) LOG_C(Vkm::Log::LogLevel::VERBOSE, category, format, ##__VA_ARGS__)
-#define LOG_DEBUG_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::DEBUG, category, format, ##__VA_ARGS__)
-#define LOG_INFO_C(category, format, ...)    LOG_C(Vkm::Log::LogLevel::INFO, category, format, ##__VA_ARGS__)
-#define LOG_WARNING_C(category, format, ...) LOG_C(Vkm::Log::LogLevel::WARNING, category, format, ##__VA_ARGS__)
-#define LOG_ERROR_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::ERROR, category, format, ##__VA_ARGS__)
-#define LOG_FATAL_C(category, format, ...)   LOG_C(Vkm::Log::LogLevel::FATAL, category, format, ##__VA_ARGS__)
+#define LOG_TRACE_C(category, format, ...)   LOG_C(Vkm::Log::Level::Trace, category, format, ##__VA_ARGS__)
+#define LOG_VERBOSE_C(category, format, ...) LOG_C(Vkm::Log::Level::Verbose, category, format, ##__VA_ARGS__)
+#define LOG_DEBUG_C(category, format, ...)   LOG_C(Vkm::Log::Level::Debug, category, format, ##__VA_ARGS__)
+#define LOG_INFO_C(category, format, ...)    LOG_C(Vkm::Log::Level::Info, category, format, ##__VA_ARGS__)
+#define LOG_WARNING_C(category, format, ...) LOG_C(Vkm::Log::Level::Warning, category, format, ##__VA_ARGS__)
+#define LOG_ERROR_C(category, format, ...)   LOG_C(Vkm::Log::Level::Error, category, format, ##__VA_ARGS__)
+#define LOG_FATAL_C(category, format, ...)   LOG_C(Vkm::Log::Level::Fatal, category, format, ##__VA_ARGS__)

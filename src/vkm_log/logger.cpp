@@ -1,4 +1,4 @@
-#include "logger.h"
+#include "vkm_log/logger.h"
 
 #include <filesystem>
 #include <iomanip>
@@ -17,7 +17,7 @@ std::unique_ptr<Logger> Logger::s_instance = nullptr;
 Logger::Logger(
     const std::string& filename,
     const std::string& suffix,
-    LogLevel level
+    Level level
 ) : m_filename(filename),
     m_suffix(suffix),
     m_level(level) {
@@ -38,7 +38,7 @@ Logger::~Logger() {
     }
 }
 
-bool Logger::init(const std::string& filename, const std::string& suffix, LogLevel level) {
+bool Logger::init(const std::string& filename, const std::string& suffix, Level level) {
     if (s_isInitialized) {
         printf("WARNING: Logger already initialized! Call Logger::init() only once.\n");
         return false;
@@ -56,7 +56,7 @@ Logger& Logger::getInstance() {
     return *s_instance;
 }
 
-void Logger::log(LogLevel level, const char* suffix, const char* category, const char* format, ...) {
+void Logger::log(Level level, const char* suffix, const char* category, const char* format, ...) {
     if (level < m_level) {
         return;
     }
@@ -114,15 +114,15 @@ void Logger::log(LogLevel level, const char* suffix, const char* category, const
     }
 }
 
-std::string Logger::levelToString(LogLevel level) {
+std::string Logger::levelToString(Level level) {
     switch (level) {
-        case LogLevel::TRACE:   return "TRACE";
-        case LogLevel::VERBOSE: return "VERBOSE";
-        case LogLevel::DEBUG:   return "DEBUG";
-        case LogLevel::INFO:    return "INFO";
-        case LogLevel::WARNING: return "WARNING";
-        case LogLevel::ERROR:   return "ERROR";
-        case LogLevel::FATAL:   return "FATAL";
+        case Level::Trace:   return "TRACE";
+        case Level::Verbose: return "VERBOSE";
+        case Level::Debug:   return "DEBUG";
+        case Level::Info:    return "INFO";
+        case Level::Warning: return "WARNING";
+        case Level::Error:   return "ERROR";
+        case Level::Fatal:   return "FATAL";
         default:                return "UNKNOWN";
     }
 }
