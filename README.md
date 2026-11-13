@@ -20,6 +20,7 @@ A thread-safe logger and an assert. Every line goes to the console and to one fi
   where it is defined (a `Release` or `RelWithDebInfo` build), and otherwise a failed condition logs
   one `ERROR` line, with the caller's suffix and category, and stops the program (`stopProgram`).
 - The console is flushed on every line, so a program whose output is piped shows each line at once.
+- A file that will not open or will not take a line is said on the console, and the lines go on there.
 
 ## A program's log
 

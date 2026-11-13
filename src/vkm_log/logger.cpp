@@ -1,9 +1,11 @@
 #include "vkm_log/logger.h"
 
 #include <array>
+#include <cerrno>
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
@@ -25,6 +27,16 @@ constexpr std::string_view LEVEL_NAMES[] = {
     "FATAL"
 };  ///< In Level's order.
 static_assert(std::size(LEVEL_NAMES) == static_cast<size_t>(Level::Count), "a name for each level");
+
+/// A line on the console, flushed: piped to a log collector, stdout is fully buffered, and a
+/// headless process would show nothing until it exits.
+VKM_LOG_PRINTF(1, 2) void writeConsole(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    std::vprintf(format, args);
+    va_end(args);
+    fflush(stdout);
+}
 
 /// Now, local time, as "YYYY-MM-DD HH:MM:SS.mmm".
 std::string timestamp() {
@@ -60,7 +72,11 @@ Logger::Logger(const std::filesystem::path& path, const std::string& suffix, Lev
 
     // Binary: a line ends in '\n' alone on every platform, as parseLine and a reader of the file expect.
     m_file.open(path, std::ios::app | std::ios::binary);
-    if (!m_file.is_open()) return;
+    if (!m_file.is_open()) {
+        const char* reason = std::strerror(errno);
+        writeConsole("WARNING: Logger cannot open %s (%s).\n", path.string().c_str(), reason);
+        return;
+    }
 
     m_path     = path;
     m_runStart = std::filesystem::file_size(path, ec);
@@ -69,7 +85,7 @@ Logger::Logger(const std::filesystem::path& path, const std::string& suffix, Lev
 
 bool Logger::init(const std::filesystem::path& path, const std::string& suffix, Level level) {
     if (s_instance && s_instance->m_file.is_open()) {
-        printf("WARNING: Logger already writes to a file; Logger::init() is refused.\n");
+        writeConsole("WARNING: Logger already has a file; Logger::init() is refused.\n");
         return false;
     }
     s_instance = std::unique_ptr<Logger>(new Logger(path, suffix, level));
@@ -78,7 +94,7 @@ bool Logger::init(const std::filesystem::path& path, const std::string& suffix, 
 
 Logger& Logger::getInstance() {
     if (!s_instance) {
-        printf("ERROR: Logger not initialized! Call Logger::init() before using.\n");
+        writeConsole("ERROR: Logger not initialized! Call Logger::init() before using.\n");
         throw std::runtime_error("Logger not initialized! Call Logger::init() before using.");
     }
     return *s_instance;
@@ -97,7 +113,7 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
     va_end(args);
 
     if (len < 0) {
-        printf("Logger formatting error.\n");
+        writeConsole("ERROR: Logger cannot format \"%s\"; the line is dropped.\n", format);
         return;
     }
 
@@ -120,14 +136,20 @@ void Logger::log(Level level, const char* suffix, const char* category, const ch
         logStream << " [" << levelName(level) << "] " << buffer.data() << "\n";
         const std::string line = logStream.str();
 
-        // Flushed: piped to a log collector, stdout is fully buffered, and a headless process would
-        // show nothing until it exits.
-        printf("%s", line.c_str());
-        fflush(stdout);
+        writeConsole("%s", line.c_str());
 
-        if (m_file.is_open()) {
+        // A stream that failed once stays failed: the file is said once, and kept, so init is still refused.
+        if (m_file.is_open() && m_file.good()) {
             m_file << line;
             m_file.flush();
+            if (!m_file) {
+                const char* reason = std::strerror(errno);
+                writeConsole(
+                    "ERROR: Logger cannot write to %s (%s); lines go to the console alone.\n",
+                    m_path.string().c_str(),
+                    reason
+                );
+            }
         }
     }
 }

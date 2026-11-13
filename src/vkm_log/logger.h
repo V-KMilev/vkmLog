@@ -87,8 +87,8 @@ class Logger {
         /**
          * @brief Initializes the logger singleton, writing to the console and to @p path.
          *
-         * Lines reach the console whether or not the file opened. After false, init may be called
-         * again with another file, before any other thread logs.
+         * Lines reach the console whether or not the file opened; one that will not open is said there,
+         * with why. After false, init may be called again with another file, before any other thread logs.
          *
          * @param path   The log file, appended to; its folder is made when missing. (default: log.log)
          * @param suffix Suffix added to the log message (default: ROOT)
@@ -111,6 +111,10 @@ class Logger {
 
         /**
          * @brief Logs a formatted message with the given log level.
+         *
+         * A file that will not take a line is said on the console once and takes no more; later lines
+         * reach the console alone.
+         *
          * @param level Log level for the message.
          * @param suffix Optional suffix override for this line. Pass nullptr or
          *               "" to fall back to the Logger's init suffix.
@@ -124,7 +128,7 @@ class Logger {
             VKM_LOG_PRINTF(5, 6);
 
     public:
-        /// The file lines are appended to; empty when it did not open.
+        /// The file lines are appended to, until one will not write; empty when it did not open.
         const std::filesystem::path& path() const { return m_path; }
 
         /// The file's size when this run opened it: where this run's lines begin.
