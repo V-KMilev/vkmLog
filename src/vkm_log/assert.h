@@ -14,6 +14,8 @@ void stopProgram();
 /**
  * @brief Assertion failure handler. Logs, then stops the program (stopProgram).
  *
+ * Before Logger::init there is no log, so the line goes to stderr; the program stops all the same.
+ *
  * Called by VKM_ASSERT when its condition is false. Accepts an optional
  * printf-style format string + arguments so callers can include diagnostic
  * values inline:

@@ -17,8 +17,9 @@ A thread-safe logger and an assert. Every line goes to the console and to one fi
 - Formats are printf's, and GCC and Clang check each call's arguments against its format under
   `-Wformat`, which `-Wall` turns on.
 - `VKM_ASSERT(condition[, format, ...])` keys on `NDEBUG` in the file that expands it: compiled out
-  where it is defined (a `Release` or `RelWithDebInfo` build), and otherwise a failed condition logs
-  one `ERROR` line, with the caller's suffix and category, and stops the program (`stopProgram`).
+  where it is defined (a `Release`, `RelWithDebInfo` or `MinSizeRel` build), and otherwise a failed
+  condition logs one `ERROR` line, with the caller's suffix and category, and stops the program
+  (`stopProgram`). Before `init` the line goes to stderr.
 - The console is flushed on every line, so a program whose output is piped shows each line at once.
 - A file that will not open or will not take a line is said on the console, and the lines go on there.
 
