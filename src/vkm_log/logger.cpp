@@ -15,7 +15,6 @@ namespace Vkm::Log {
 
 namespace {
 
-/// Each level's name, in Level's order.
 constexpr std::string_view LEVEL_NAMES[] = {
     "TRACE",
     "VERBOSE",
@@ -24,7 +23,7 @@ constexpr std::string_view LEVEL_NAMES[] = {
     "WARNING",
     "ERROR",
     "FATAL"
-};
+};  ///< In Level's order.
 static_assert(std::size(LEVEL_NAMES) == static_cast<size_t>(Level::Count), "a name for each level");
 
 /// Now, local time, as "YYYY-MM-DD HH:MM:SS.mmm".
@@ -39,9 +38,7 @@ std::string timestamp() {
 #endif
     std::ostringstream timestampStream;
     // From the same reading as the seconds: a second reading may have crossed into the next second.
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()
-    ) % 1000;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
     timestampStream << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
     timestampStream << '.' << std::setfill('0') << std::setw(3) << ms.count();
@@ -53,11 +50,7 @@ std::string timestamp() {
 
 std::unique_ptr<Logger> Logger::s_instance = nullptr;
 
-Logger::Logger(
-    const std::filesystem::path& path,
-    const std::string& suffix,
-    Level level
-)
+Logger::Logger(const std::filesystem::path& path, const std::string& suffix, Level level)
     : m_suffix(suffix)
     , m_level(level)
 {

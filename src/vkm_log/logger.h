@@ -41,7 +41,9 @@ enum class Level {
  */
 std::string_view levelName(Level level);
 
-/// One line as the logger writes it, each field a view into the text it was read from.
+/**
+ * @brief One line as the logger writes it, each field a view into the text it was read from.
+ */
 struct Line {
     std::string_view time;                 ///< "YYYY-MM-DD HH:MM:SS.mmm", local time.
     std::string_view suffix;               ///< The init suffix, or the one the call named.
@@ -134,17 +136,13 @@ class Logger {
          * @param suffix Suffix added to the log message
          * @param level Minimum log level to output.
          */
-        Logger(
-            const std::filesystem::path& path,
-            const std::string& suffix,
-            Level level
-        );
+        Logger(const std::filesystem::path& path, const std::string& suffix, Level level);
 
     private:
-        std::filesystem::path m_path;                ///< Empty when the file did not open.
+        std::filesystem::path m_path;                    ///< Empty when the file did not open.
         std::uintmax_t        m_runStart = 0;
-        std::string           m_suffix;              ///< A line's suffix when its call names none.
-        Level                 m_level = Level::Info; ///< The least a line must be to be written.
+        std::string           m_suffix;                  ///< A line's suffix when its call names none.
+        Level                 m_level    = Level::Info;  ///< The least a line must be to be written.
 
         std::ofstream m_file;
         std::mutex    m_mutex;  ///< One line at a time, to the console and the file.
