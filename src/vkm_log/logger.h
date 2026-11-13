@@ -58,7 +58,8 @@ struct Line {
  * The level is the third bracketed field, or the fourth when a category comes first, so a message
  * opening with brackets of its own keeps them.
  *
- * @param text One line, without its newline.
+ * @param text One line, without its newline; a '\r' before it, as another tool may write, is not
+ *             part of the message.
  * @return Its fields, viewing @p text; nothing when neither its third nor its fourth leading bracketed
  *         field is a level's name.
  */

@@ -58,7 +58,8 @@ Logger::Logger(const std::filesystem::path& path, const std::string& suffix, Lev
     std::error_code ec;
     std::filesystem::create_directories(path.parent_path(), ec);
 
-    m_file.open(path, std::ios::app);
+    // Binary: a line ends in '\n' alone on every platform, as parseLine and a reader of the file expect.
+    m_file.open(path, std::ios::app | std::ios::binary);
     if (!m_file.is_open()) return;
 
     m_path     = path;
@@ -137,6 +138,9 @@ std::string_view levelName(Level level) {
 }
 
 std::optional<Line> parseLine(std::string_view text) {
+    // A file another tool wrote may end its lines in "\r\n".
+    if (!text.empty() && text.back() == '\r') text.remove_suffix(1);
+
     // The bracketed fields at the front, up to four: time, suffix, category, level.
     constexpr size_t MAX_FIELDS = 4;
 

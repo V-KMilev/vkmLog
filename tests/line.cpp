@@ -232,6 +232,27 @@ TEST("lines logged from several threads at once each arrive whole, none lost") {
     CHECK(static_cast<size_t>(whole) == lines.size());
 }
 
+TEST("a line in the file ends in a newline alone, on every platform") {
+    const std::filesystem::path path = openLog();
+    Logger::getInstance().log(Level::Info, nullptr, "CORE", "%s", "one");
+    Logger::getInstance().log(Level::Info, nullptr, "CORE", "%s", "two");
+
+    const std::string text = Vkm::Test::readText(path);
+    CHECK(text.find('\r') == std::string::npos);
+    CHECK(text.size() > 1u);
+    CHECK(text.back() == '\n');
+}
+
+TEST("a line ending in a carriage return, as another tool may write it, parses without it") {
+    const auto line = parseLine("[2026-01-02 03:04:05.006] [S] [CAT] [ERROR] the message\r");
+    REQUIRE(line.has_value());
+    CHECK(line->message == "the message");
+
+    const auto empty = parseLine("[2026-01-02 03:04:05.006] [S] [CAT] [ERROR] \r");
+    REQUIRE(empty.has_value());
+    CHECK(empty->message.empty());
+}
+
 TEST("text with no level's name in its third or fourth bracketed field parses as nothing") {
     CHECK(!parseLine("plain words").has_value());
     CHECK(!parseLine("[t] [S] message").has_value());
