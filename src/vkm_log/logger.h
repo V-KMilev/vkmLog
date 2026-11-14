@@ -136,7 +136,7 @@ class Logger {
 
     private:
         /**
-         * @brief Private constructor. Only accessible from getInstance/init.
+         * @brief The one logger, which only init makes: opens @p path and keeps the suffix and level.
          * @param path The log file; the logger has none when it will not open.
          * @param suffix Suffix added to the log message
          * @param level Minimum log level to output.
