@@ -1,0 +1,108 @@
+# vkmLog built alone and its suite run, with GCC and Clang, on Linux and on Windows (MSYS2's
+# UCRT64), as CONTRIBUTING.md builds it. A warning in the library or its suite fails the run. Run by
+# hand (Actions > CI > Run workflow); a version tag runs it too, then publishes the tag's GitHub
+# release, its notes the tag's CHANGELOG.md section.
+name: CI
+run-name: ${{ github.ref_type == 'tag' && format('Release {0}', github.ref_name) || format('CI {0}', github.ref_name) }}
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+# A newer run on the same branch makes the running one moot.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.label }} (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux,   runner: ubuntu-24.04, shell: bash,        label: GCC,   cc: gcc,   cxx: g++ }
+          - { os: linux,   runner: ubuntu-24.04, shell: bash,        label: Clang, cc: clang, cxx: clang++ }
+          - { os: windows, runner: windows-2022, shell: "msys2 {0}", label: GCC,   cc: gcc,   cxx: g++ }
+          - { os: windows, runner: windows-2022, shell: "msys2 {0}", label: Clang, cc: clang, cxx: clang++ }
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      # The tree's bytes as they are on Linux.
+      - name: Keep line endings
+        if: matrix.os == 'windows'
+        shell: bash
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+
+      # Ninja; the runner has both compilers and CMake.
+      - name: Install the tools
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get -o Acquire::Retries=5 update
+          sudo apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
+            ninja-build
+
+      # Both compilers, as Clang there builds against GCC's standard library; Git, for the fetches.
+      - name: Install the tools
+        if: matrix.os == 'windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+
+      - name: Build
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DVKM_LOG_BUILD_TESTS=ON \
+            -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+          cmake --build build
+
+      # Each test is a process of its own; one that stops answering is ended at its own limit.
+      - name: Test
+        timeout-minutes: 15
+        run: ctest --test-dir build --output-on-failure --timeout 300
+
+  release:
+    name: Release
+    needs: test
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Notes from the changelog
+        run: |
+          version="${TAG#v}"
+          awk -v v="$version" '$0 == "## " v { on = 1; next } /^## / { on = 0 } on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "vkmLog $version." > notes.md
+
+      # A rerun puts the notes on the release the first run made.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" --title "vkmLog ${TAG#v}" --notes-file notes.md
+          fi
